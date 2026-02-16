@@ -22,8 +22,8 @@ class OpenAIService:
         self.client = OpenAI(api_key=api_key)
         self.model = os.getenv("OPENAI_MODEL", "gpt-4o")
         self.mini_model = os.getenv("OPENAI_MINI_MODEL", "gpt-4o-mini")
-        self.tts_voice = os.getenv("OPENAI_TTS_VOICE", "nova")
-        self.tts_model = os.getenv("OPENAI_TTS_MODEL", "tts-1")
+        self.tts_voice = os.getenv("OPENAI_TTS_VOICE", "alloy")
+        self.tts_model = os.getenv("OPENAI_TTS_MODEL", "tts-1-hd")
         self.whisper_model = os.getenv("OPENAI_WHISPER_MODEL", "whisper-1")
     
     async def transcribe_audio(self, audio_file) -> str:
@@ -77,10 +77,10 @@ class OpenAIService:
             messages = [
                 {
                     "role": "system",
-                    "content": """You are Ava, a warm and professional personal AI assistant. 
-                    You help people manage their busy lives with empathy and intelligence.
-                    Keep responses concise but friendly. You're like Jarvis to Tony Stark - 
-                    proactive, helpful, and always one step ahead."""
+                    "content": """You are Ava, a warm and natural personal AI assistant. 
+                    Speak conversationally like a helpful friend. Keep responses SHORT - 
+                    2-3 sentences max unless asked for details. Be warm, natural, and authentic.
+                    Think of how you'd text a friend, not write an essay."""
                 }
             ]
             
@@ -95,8 +95,8 @@ class OpenAIService:
             response = self.client.chat.completions.create(
                 model=model,
                 messages=messages,
-                temperature=0.7,
-                max_tokens=500
+                temperature=0.8,  # Slightly more natural/creative
+                max_tokens=150  # Shorter responses = faster + more natural
             )
             
             response_text = response.choices[0].message.content
@@ -126,7 +126,8 @@ class OpenAIService:
             response = self.client.audio.speech.create(
                 model=self.tts_model,
                 voice=voice_to_use,
-                input=text
+                input=text,
+                speed=1.0  # Natural speaking speed
             )
             
             logger.info("TTS conversion successful")
