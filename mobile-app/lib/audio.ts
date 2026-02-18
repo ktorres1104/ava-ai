@@ -229,8 +229,10 @@ export class AudioPlayer {
  */
 export function isAudioRecordingSupported(): boolean {
   return !!(
+    typeof navigator !== 'undefined' &&
     navigator.mediaDevices &&
-    navigator.mediaDevices.getUserMedia &&
-    window.MediaRecorder
+    typeof navigator.mediaDevices.getUserMedia === 'function' &&
+    typeof window !== 'undefined' &&
+    typeof window.MediaRecorder === 'function'
   );
 }
