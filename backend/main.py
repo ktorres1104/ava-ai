@@ -35,6 +35,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         frontend_url,
+        "https://ava-ai-fawn.vercel.app",
+        "https://*.vercel.app",
         "http://localhost:3000",
         "http://localhost:3001",
         "http://localhost:3002",
