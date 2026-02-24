@@ -3,7 +3,7 @@ OpenAI API service for Whisper, GPT-4o, and TTS
 """
 import os
 from openai import OpenAI
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Tuple, Any
 import logging
 
 # Set up logging
@@ -52,12 +52,86 @@ class OpenAIService:
             logger.error(f"Transcription error: {str(e)}")
             raise
     
+    def get_calendar_functions(self) -> List[Dict]:
+        """Define calendar function definitions for GPT-4o"""
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": "create_calendar_event",
+                    "description": "Create a new calendar event. Use this when user asks to schedule, add, or create an appointment/meeting/event.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "title": {
+                                "type": "string",
+                                "description": "Event title or name"
+                            },
+                            "start_time": {
+                                "type": "string",
+                                "description": "Start time in natural language (e.g., 'tomorrow at 2pm', 'next Tuesday 9am')"
+                            },
+                            "duration_minutes": {
+                                "type": "integer",
+                                "description": "Event duration in minutes (default: 60)"
+                            },
+                            "calendar": {
+                                "type": "string",
+                                "enum": ["google", "yahoo"],
+                                "description": "Which calendar to use (default: google)"
+                            },
+                            "location": {
+                                "type": "string",
+                                "description": "Event location (optional)"
+                            }
+                        },
+                        "required": ["title", "start_time"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "list_calendar_events",
+                    "description": "Get upcoming calendar events. Use this when user asks what's on their calendar, schedule, or agenda.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "time_range": {
+                                "type": "string",
+                                "description": "Time range in natural language (e.g., 'today', 'tomorrow', 'this week', 'next week')"
+                            }
+                        },
+                        "required": ["time_range"]
+                    }
+                }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "delete_calendar_event",
+                    "description": "Delete or cancel a calendar event. Use this when user asks to cancel, remove, or delete an event.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "event_title": {
+                                "type": "string",
+                                "description": "Title of the event to delete"
+                            }
+                        },
+                        "required": ["event_title"]
+                    }
+                }
+            }
+        ]
+    
     async def chat_completion(
         self, 
         message: str, 
         conversation_history: Optional[List[Dict]] = None,
-        use_mini: bool = False
-    ) -> tuple[str, str]:
+        use_mini: bool = False,
+        enable_functions: bool = True
+    ) -> Tuple[Optional[str], str, Optional[Any]]:
         """
         Get chat completion from GPT-4o or GPT-4o-mini
         
@@ -65,9 +139,10 @@ class OpenAIService:
             message: User message
             conversation_history: Previous conversation context
             use_mini: Use GPT-4o-mini for simple queries
+            enable_functions: Enable calendar function calling
             
         Returns:
-            Tuple of (response_text, model_used)
+            Tuple of (response_text, model_used, tool_call)
         """
         try:
             model = self.mini_model if use_mini else self.model
@@ -91,18 +166,34 @@ class OpenAIService:
             # Add current message
             messages.append({"role": "user", "content": message})
             
-            # Get completion
-            response = self.client.chat.completions.create(
-                model=model,
-                messages=messages,
-                temperature=0.8,  # Slightly more natural/creative
-                max_tokens=150  # Shorter responses = faster + more natural
-            )
+            # Prepare request params
+            request_params = {
+                "model": model,
+                "messages": messages,
+                "temperature": 0.8,
+                "max_tokens": 150
+            }
             
-            response_text = response.choices[0].message.content
+            # Add function calling if enabled and not using mini model
+            if enable_functions and not use_mini:
+                request_params["tools"] = self.get_calendar_functions()
+                request_params["tool_choice"] = "auto"
+            
+            # Get completion
+            response = self.client.chat.completions.create(**request_params)
+            
+            message_obj = response.choices[0].message
+            
+            # Check if model wants to call a function
+            if hasattr(message_obj, 'tool_calls') and message_obj.tool_calls:
+                # Return function call info
+                tool_call = message_obj.tool_calls[0]
+                return None, model, tool_call  # Will be handled in route
+            
+            response_text = message_obj.content
             logger.info(f"Chat completion successful with {model}")
             
-            return response_text, model
+            return response_text, model, None
             
         except Exception as e:
             logger.error(f"Chat completion error: {str(e)}")

@@ -4,7 +4,7 @@ Main entry point for the API server
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routes import voice, ai
+from routes import voice, ai, auth, calendar
 from models.schemas import HealthResponse
 import os
 from dotenv import load_dotenv
@@ -50,6 +50,8 @@ app.add_middleware(
 # Include routers
 app.include_router(voice.router)
 app.include_router(ai.router)
+app.include_router(auth.router)
+app.include_router(calendar.router)
 
 
 @app.get("/", response_model=HealthResponse)

@@ -4,8 +4,10 @@ import { useState, useRef, useEffect } from 'react';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import AudioPlayer from '@/components/AudioPlayer';
 import ChatMessage from '@/components/ChatMessage';
+import CalendarPanel from '@/components/CalendarPanel';
+import CalendarConnect from '@/components/CalendarConnect';
 import { sendChatMessage, synthesizeSpeech, type ChatMessage as ChatMessageType } from '@/lib/api';
-import { Sparkles, AlertCircle, Send, Keyboard, Mic, Trash2 } from 'lucide-react';
+import { Sparkles, AlertCircle, Send, Keyboard, Mic, Trash2, Settings } from 'lucide-react';
 
 export default function Home() {
   const [messages, setMessages] = useState<Array<ChatMessageType & { timestamp: Date }>>([]);
@@ -14,6 +16,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [textInput, setTextInput] = useState('');
   const [inputMode, setInputMode] = useState<'voice' | 'text'>('voice');
+  const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textInputRef = useRef<HTMLInputElement>(null);
 
@@ -149,6 +152,13 @@ export default function Home() {
             <p className="text-xs text-gray-500">Your Personal Assistant</p>
           </div>
           <button
+            onClick={() => setShowSettings(true)}
+            className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
+            title="Calendar settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
+          <button
             onClick={handleClearConversation}
             className="p-2 rounded-full hover:bg-gray-100 text-gray-600 transition-colors"
             title="Clear conversation"
@@ -156,7 +166,30 @@ export default function Home() {
             <Trash2 className="w-5 h-5" />
           </button>
         </div>
+        
+        {/* Calendar Panel */}
+        <CalendarPanel />
       </header>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full max-h-[80vh] overflow-y-auto shadow-2xl">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between rounded-t-3xl">
+              <h2 className="text-xl font-bold text-gray-900">Calendar Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-6">
+              <CalendarConnect />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Messages Container */}
       <main className="flex-1 overflow-y-auto">
@@ -201,7 +234,7 @@ export default function Home() {
           <div className="flex justify-center gap-2 mb-3">
             <button
               onClick={() => setInputMode('voice')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all min-h-[44px] ${
                 inputMode === 'voice'
                   ? 'bg-gradient-to-r from-purple-600 to-teal-600 text-white shadow-md'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -215,7 +248,7 @@ export default function Home() {
                 setInputMode('text');
                 setTimeout(() => textInputRef.current?.focus(), 100);
               }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all min-h-[44px] ${
                 inputMode === 'text'
                   ? 'bg-gradient-to-r from-purple-600 to-teal-600 text-white shadow-md'
                   : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -250,7 +283,7 @@ export default function Home() {
               <button
                 type="submit"
                 disabled={!textInput.trim() || isProcessing || !!audioUrl}
-                className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-600 to-teal-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg"
+                className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-600 to-teal-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg min-h-[44px] min-w-[44px]"
               >
                 {isProcessing ? (
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
